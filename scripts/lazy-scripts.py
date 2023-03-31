@@ -39,7 +39,8 @@ SCRIPT_TYPES = [
 ]
 
 SHELLS = {
-	"/usr/bin/zsh": (os.path.join(os.environ['HOME'], ".zshrc"), f'export PATH="{LOCAL_BIN}:$PATH"')
+	"/usr/bin/zsh": (os.path.join(os.environ['HOME'], ".zshrc"), f'export PATH="{LOCAL_BIN}:$PATH"'),
+	"/usr/bin/bash": (os.path.join(os.environ['HOME'], ".bashrc"), f'export PATH="{LOCAL_BIN}:$PATH"')
 }
 
 
