@@ -15,11 +15,14 @@ and managing scripting language specific quirks per script.
 For example, lets say I create a script to run a package update:
 
 ```bash
+# ./scripts/upgrade.sh
 apt update && apt upgrade -y
 ```
 
 I call this script `upgrade.sh` and drop it in the `./scripts` folder and run `lazy-scripts`.
-Now I can call `upgrade` from anywhere to run the script. But wait, there's more.
+Now I can call `upgrade` from anywhere to run the script. 
+
+But wait, there's more.
 
 ```bash
 # name: Upgrade APT
