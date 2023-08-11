@@ -37,6 +37,7 @@ I've added some pseudo-frontmatter options at the top of the script file and now
 1. `desktop: true` means that a `.desktop` entry file that runs the script will be added to `~/.local/share/applications`. It will have the title provided in `name`.
 2. `notify` will send a desktop notification with the indicated contents upon the script's completion (currently using `notify-send`).
 3. `sudo` will ensure the script requests elevated privileges if it doesn't already have them.
+4. `zshrc` will treat the current zsh file as a new .zshrc to load a fresh instance of zsh into. Just remember to `source ~/.zshrc` if you want to include your default configuration.
 
 These frontmatter blocks need to be valid YAML and at the top of your script file before any code.
 Line comments and block comments in your language of choice are all supported, but don't mix and match.
@@ -65,7 +66,6 @@ This project is primarily intended for Linux environments but may *incidentally*
 ### todo?
 
 1. perhaps allow the `notify` field to include different messages for different exit codes.
-2. automatic virtual environment management for python scripts.
-3. allow specifying requirements for scripts in frontmatter, such as python packages or OS packages.
-4. allow specifying keyboard shortcuts in frontmatter
-5. add support for `.js`, `.kts`, `.rb`, etc.
+2. allow specifying requirements for scripts in frontmatter, such as python packages or OS packages.
+3. allow specifying keyboard shortcuts in frontmatter
+4. add support for `.js`, `.kts`, `.rb`, etc.

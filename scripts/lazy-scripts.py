@@ -5,11 +5,13 @@ pause: true
 '''
 
 import os
+import shutil
 import re
 import yaml
 
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 LOCAL_BIN = os.path.realpath(f'{os.environ["HOME"]}/.local/share/lazy-scripts/bin')
+LOCAL_ZSHRC = os.path.realpath(f'{os.environ["HOME"]}/.local/share/lazy-scripts/zshrc')
 DESKTOP_ENTRY_DIR = os.path.realpath(f'{os.environ["HOME"]}/.local/share/applications')
 
 SH_PAUSE = """
@@ -98,15 +100,21 @@ def clear_local_bin():
 	for stub in os.listdir(LOCAL_BIN):
 		os.remove(os.path.join(LOCAL_BIN, stub))
 
+def init_local_zshrc():
+	os.makedirs(LOCAL_ZSHRC, exist_ok=True)
+
+def clear_local_zshrc():
+	for dir in os.listdir(LOCAL_ZSHRC):
+		shutil.rmtree(os.path.join(LOCAL_ZSHRC, dir))
+
+
 def get_notify_stub(stub_name, notification):
 	return f"""
 if [ -x "$(command -v notify-send)" ]; then
 	notify-send "lazy-scripts: {stub_name}" "{notification}"
 fi"""
 
-def emit_to_local_bin(script_path, script_type, script_meta):
-	stub_name = os.path.splitext(os.path.basename(script_path))[0]
-	stub_path = os.path.join(LOCAL_BIN, stub_name)
+def write_general_stub(script_path, script_type, script_meta, stub_name, stub_path):
 	with open(stub_path, 'w') as stub_file:
 		if script_meta is not None and script_meta.get("sudo", False):
 			stub_file.write("sudo ")
@@ -118,9 +126,34 @@ def emit_to_local_bin(script_path, script_type, script_meta):
 		if script_meta is not None and script_meta.get("pause", False):
 			stub_file.write(SH_PAUSE)
 
+def write_zshrc_stub(stub_path, zshrc_dir):
+	with open(stub_path, 'w') as stub_file:
+		stub_file.write(f"ZDOTDIR={zshrc_dir} exec zsh -i")
+
+
+def emit_to_local_bin(script_path, script_type, script_meta):
+	stub_name = os.path.splitext(os.path.basename(script_path))[0]
+	stub_path = os.path.join(LOCAL_BIN, stub_name)
+
+	# if zhsrc is set, bypass the usual stub generation
+	if script_meta is not None and script_meta.get("zshrc", False):
+		zshrc_dir, script_path = emit_to_local_zshrc(script_path, stub_name)
+		write_zshrc_stub(stub_path, zshrc_dir)
+	else:
+		write_general_stub(script_path, script_type, script_meta, stub_name, stub_path)
+
 	os.chmod(stub_path, 0o744)
 	print(f'wrote stub "{stub_name}" => {script_path}')
 	return stub_name, stub_path
+
+
+def emit_to_local_zshrc(script_path, stub_name):
+	zshrc_dir = os.path.join(LOCAL_ZSHRC, stub_name)
+	os.makedirs(zshrc_dir, exist_ok=True)
+	zshrc_path = os.path.join(zshrc_dir, '.zshrc')
+	os.symlink(script_path, zshrc_path)
+	print(f'wrote zshrc symlink "{zshrc_path}" => {script_path}')
+	return zshrc_dir, zshrc_path
 
 
 def get_desktop_entry(stub_name, stub_path, script_meta):
@@ -145,6 +178,8 @@ def clear_desktop_entries():
 def main():
 	init_local_bin()
 	clear_local_bin()
+	init_local_zshrc()
+	clear_local_zshrc()
 	clear_desktop_entries()
 
 	for script_filename in os.listdir(SCRIPT_DIR):
