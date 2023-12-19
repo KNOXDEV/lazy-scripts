@@ -38,6 +38,7 @@ I've added some pseudo-frontmatter options at the top of the script file and now
 2. `notify` will send a desktop notification with the indicated contents upon the script's completion (currently using `notify-send`).
 3. `sudo` will ensure the script requests elevated privileges if it doesn't already have them.
 4. `zshrc` will treat the current zsh file as a new .zshrc to load a fresh instance of zsh into. Just remember to `source ~/.zshrc` if you want to include your default configuration.
+5. `query` will check if you've passed arguments, and if you haven't, it will ask for them before executing. Set `query` to the message you want to prompt with.
 
 These frontmatter blocks need to be valid YAML and at the top of your script file before any code.
 Line comments and block comments in your language of choice are all supported, but don't mix and match.

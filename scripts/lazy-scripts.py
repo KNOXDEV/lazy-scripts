@@ -19,6 +19,34 @@ printf 'press ENTER to continue...'
 read _
 """
 
+SH_QUERY = """
+if [ $# -eq 0 ]; then
+    if [ -t 0 ]; then
+        read -p "{prompt} " arguments
+    else
+        arguments=$(zenity --entry --title={title} --text={prompt})
+    fi
+else
+    arguments="$@"
+fi
+"""
+
+SH_NOTIFY = """
+if [ -x "$(command -v notify-send)" ]; then
+	notify-send "lazy-scripts: {stub_name}" "{notification}"
+fi
+"""
+
+DESKTOP_ENTRY_TEMPLATE = """
+[Desktop Entry]
+Type=Application
+Terminal=true
+Name={name}
+Icon=utilities-terminal
+Exec={stub_path}
+Categories=Application
+"""
+
 SCRIPT_TYPES = [
 	{
 		"ext": ".py",
@@ -78,14 +106,14 @@ def get_first_comment_lines(script_path, script_type):
 def get_script_frontmatter(script_path, script_type):
 	comment_block = get_first_comment_lines(script_path, script_type)
 	if comment_block is None:
-		return None
+		return dict()
 	try:
 		frontmatter = yaml.safe_load(comment_block)
 		if type(frontmatter) is not dict:
-			return None
+			return dict()
 		return frontmatter
 	except yaml.YAMLError as exc:
-		return None
+		return dict()
 
 def init_local_bin():
 	os.makedirs(LOCAL_BIN, exist_ok=True)
@@ -116,14 +144,21 @@ fi"""
 
 def write_general_stub(script_path, script_type, script_meta, stub_name, stub_path):
 	with open(stub_path, 'w') as stub_file:
-		if script_meta is not None and script_meta.get("sudo", False):
+		if script_meta.get("query", False):
+			query = script_meta["query"]
+			prompt = query if isinstance(query, str) else "Enter script arguments:"
+			title = script_meta.get("name", stub_name)
+			stub_file.write(SH_QUERY.format(prompt=prompt, title=title))
+		else:
+			stub_file.write('arguments="$@"\n')
+		if script_meta.get("sudo", False):
 			stub_file.write("sudo ")
 		stub_file.write(script_type['stub'])
 		stub_file.write(script_path)
-		stub_file.write("\n")
-		if script_meta is not None and script_meta.get("notify", False):
-			stub_file.write(get_notify_stub(stub_name, script_meta["notify"]))
-		if script_meta is not None and script_meta.get("pause", False):
+		stub_file.write(' "$arguments"\n')
+		if script_meta.get("notify", False):
+			stub_file.write(SH_NOTIFY.format(stub_name=stub_name, notification=script_meta["notify"]))
+		if script_meta.get("pause", False):
 			stub_file.write(SH_PAUSE)
 
 def write_zshrc_stub(stub_path, zshrc_dir):
@@ -136,7 +171,7 @@ def emit_to_local_bin(script_path, script_type, script_meta):
 	stub_path = os.path.join(LOCAL_BIN, stub_name)
 
 	# if zhsrc is set, bypass the usual stub generation
-	if script_meta is not None and script_meta.get("zshrc", False):
+	if script_meta.get("zshrc", False):
 		zshrc_dir, script_path = emit_to_local_zshrc(script_path, stub_name)
 		write_zshrc_stub(stub_path, zshrc_dir)
 	else:
@@ -157,18 +192,8 @@ def emit_to_local_zshrc(script_path, stub_name):
 
 
 def get_desktop_entry(stub_name, stub_path, script_meta):
-	name = stub_name if script_meta is None else script_meta.get('name', stub_name)
-	lines = [
-		"[Desktop Entry]",
-		"Type=Application",
-		"Terminal=true",
-		f"Name={name}",
-		"Icon=utilities-terminal",
-		f"Exec={stub_path}",
-		"Categories=Application;"
-	]
-
-	return "\n".join(lines)
+	name = script_meta.get('name', stub_name)
+	return DESKTOP_ENTRY_TEMPLATE.format(name=name, stub_path=stub_path)
 
 def clear_desktop_entries():
 	for entry in os.listdir(DESKTOP_ENTRY_DIR):
